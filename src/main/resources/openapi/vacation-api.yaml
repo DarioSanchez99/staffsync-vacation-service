@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: Vacation Service API
+  description: API for managing vacation requests in StaffSync
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8084
+    description: Local development
+
+tags:
+  - name: vacations
+    description: Vacation request management operations
+
+paths:
+  /vacations:
+    get:
+      tags:
+        - vacations
+      summary: List all vacation requests
+      operationId: listVacations
+      responses:
+        '200':
+          description: List of vacation requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VacationResponse'
+    post:
+      tags:
+        - vacations
+      summary: Submit a vacation request
+      operationId: submitVacation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitVacationRequest'
+      responses:
+        '201':
+          description: Vacation request created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationResponse'
+        '400':
+          description: Invalid request
+
+  /vacations/{id}:
+    get:
+      tags:
+        - vacations
+      summary: Get vacation request by ID
+      operationId: getVacationById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vacation request found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationResponse'
+        '404':
+          description: Vacation request not found
+
+  /vacations/employee/{employeeId}:
+    get:
+      tags:
+        - vacations
+      summary: List vacation requests by employee
+      operationId: listVacationsByEmployee
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of vacation requests for employee
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VacationResponse'
+
+  /vacations/pending:
+    get:
+      tags:
+        - vacations
+      summary: List pending vacation requests (MANAGER role)
+      operationId: listPendingVacations
+      responses:
+        '200':
+          description: List of pending vacation requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VacationResponse'
+        '403':
+          description: Forbidden
+
+  /vacations/{id}/approve:
+    put:
+      tags:
+        - vacations
+      summary: Approve a vacation request
+      operationId: approveVacation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewVacationRequest'
+      responses:
+        '200':
+          description: Vacation request approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationResponse'
+        '404':
+          description: Vacation request not found
+
+  /vacations/{id}/reject:
+    put:
+      tags:
+        - vacations
+      summary: Reject a vacation request
+      operationId: rejectVacation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectVacationRequest'
+      responses:
+        '200':
+          description: Vacation request rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationResponse'
+        '404':
+          description: Vacation request not found
+
+components:
+  schemas:
+    VacationStatus:
+      type: string
+      enum:
+        - PENDING
+        - APPROVED
+        - REJECTED
+
+    SubmitVacationRequest:
+      type: object
+      required:
+        - employeeId
+        - startDate
+        - endDate
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+
+    ReviewVacationRequest:
+      type: object
+      required:
+        - reviewedBy
+      properties:
+        reviewedBy:
+          type: string
+          format: uuid
+
+    RejectVacationRequest:
+      type: object
+      required:
+        - reviewedBy
+      properties:
+        reviewedBy:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    VacationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/VacationStatus'
+        reason:
+          type: string
+        reviewedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
