@@ -11,10 +11,14 @@ import com.staffsync.vacation.infrastructure.adapter.in.web.dto.VacationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -77,6 +81,38 @@ public class VacationController implements VacationsApi {
     public ResponseEntity<VacationResponse> rejectVacation(UUID id, RejectVacationRequest request) {
         VacationRequest rejected = vacationUseCase.reject(id, request.getReviewedBy(), request.getReason());
         return ResponseEntity.ok(toResponse(rejected));
+    }
+
+    @GetMapping("/vacations/paged")
+    public ResponseEntity<Map<String, Object>> listVacationsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        List<VacationRequest> all = vacationUseCase.findAll();
+        return ResponseEntity.ok(buildPage(all, page, size));
+    }
+
+    @GetMapping("/vacations/pending/paged")
+    public ResponseEntity<Map<String, Object>> listPendingVacationsPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        List<VacationRequest> pending = vacationUseCase.findPending();
+        return ResponseEntity.ok(buildPage(pending, page, size));
+    }
+
+    private Map<String, Object> buildPage(List<VacationRequest> all, int page, int size) {
+        int total = all.size();
+        int fromIndex = Math.min(page * size, total);
+        int toIndex = Math.min(fromIndex + size, total);
+        List<VacationResponse> content = all.subList(fromIndex, toIndex).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+        Map<String, Object> result = new HashMap<>();
+        result.put("content", content);
+        result.put("totalElements", (long) total);
+        result.put("totalPages", (int) Math.ceil((double) total / size));
+        result.put("page", page);
+        result.put("size", size);
+        return result;
     }
 
     private VacationResponse toResponse(VacationRequest request) {
