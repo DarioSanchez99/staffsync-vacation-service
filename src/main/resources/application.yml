@@ -5,7 +5,7 @@ spring:
   application:
     name: vacation-service
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/staffsync_vacation}
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5435/staffsync_vacation}
     username: ${DB_USER:staffsync}
     password: ${DB_PASS:staffsync}
   jpa:
@@ -26,3 +26,5 @@ eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://admin:admin@localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
