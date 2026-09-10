@@ -19,11 +19,19 @@ public class VacationEventPublisher implements VacationEventPort {
 
     private static final String KAFKA_TOPIC = "vacation-events";
     private static final String RABBITMQ_EXCHANGE = "staffsync.notifications";
+    private static final String ROUTING_KEY_REQUESTED = "vacation.requested";
     private static final String ROUTING_KEY_APPROVED = "vacation.approved";
     private static final String ROUTING_KEY_REJECTED = "vacation.rejected";
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RabbitTemplate rabbitTemplate;
+
+    @Override
+    public void publishRequested(VacationRequest request) {
+        Map<String, Object> event = buildEvent("VACATION_REQUESTED", request);
+        sendToKafka(request, event);
+        sendToRabbitMQ(ROUTING_KEY_REQUESTED, event);
+    }
 
     @Override
     public void publishApproved(VacationRequest request) {

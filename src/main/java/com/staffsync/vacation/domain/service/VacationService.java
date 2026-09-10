@@ -26,7 +26,9 @@ public class VacationService implements VacationUseCase {
         request.setId(UUID.randomUUID());
         request.setStatus(VacationStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now());
-        return vacationRepository.save(request);
+        VacationRequest saved = vacationRepository.save(request);
+        vacationEventPort.publishRequested(saved);
+        return saved;
     }
 
     @Override

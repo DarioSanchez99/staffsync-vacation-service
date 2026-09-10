@@ -4,6 +4,8 @@ import com.staffsync.vacation.domain.model.VacationRequest;
 
 public interface VacationEventPort {
 
+    void publishRequested(VacationRequest request);
+
     void publishApproved(VacationRequest request);
 
     void publishRejected(VacationRequest request);
