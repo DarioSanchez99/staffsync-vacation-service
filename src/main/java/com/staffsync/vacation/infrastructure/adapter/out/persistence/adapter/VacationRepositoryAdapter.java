@@ -9,6 +9,7 @@ import com.staffsync.vacation.infrastructure.adapter.out.persistence.repository.
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,6 +51,13 @@ public class VacationRepositoryAdapter implements VacationRepository {
     @Override
     public List<VacationRequest> findByStatus(VacationStatus status) {
         return jpaRepository.findByStatus(status).stream()
+                .map(mapper::toDomain)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<VacationRequest> findOverlapping(UUID employeeId, LocalDate startDate, LocalDate endDate) {
+        return jpaRepository.findOverlapping(employeeId, startDate, endDate).stream()
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }

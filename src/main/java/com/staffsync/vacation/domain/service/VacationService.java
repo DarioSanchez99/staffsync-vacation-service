@@ -23,6 +23,17 @@ public class VacationService implements VacationUseCase {
 
     @Override
     public VacationRequest submit(VacationRequest request) {
+        if (request.getStartDate() == null || request.getEndDate() == null) {
+            throw new IllegalArgumentException("Start date and end date are required");
+        }
+        if (request.getStartDate().isAfter(request.getEndDate())) {
+            throw new IllegalArgumentException("Start date must be before or equal to end date");
+        }
+        List<VacationRequest> overlapping = vacationRepository.findOverlapping(
+                request.getEmployeeId(), request.getStartDate(), request.getEndDate());
+        if (!overlapping.isEmpty()) {
+            throw new IllegalStateException("Employee already has a vacation request overlapping these dates");
+        }
         request.setId(UUID.randomUUID());
         request.setStatus(VacationStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now());
