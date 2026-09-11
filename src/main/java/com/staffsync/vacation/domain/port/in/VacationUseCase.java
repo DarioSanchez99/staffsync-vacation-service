@@ -10,9 +10,9 @@ public interface VacationUseCase {
 
     VacationRequest submit(VacationRequest request);
 
-    VacationRequest approve(UUID id, UUID reviewedBy);
+    VacationRequest approve(UUID id, UUID reviewedBy, String reviewedByName);
 
-    VacationRequest reject(UUID id, UUID reviewedBy, String reason);
+    VacationRequest reject(UUID id, UUID reviewedBy, String reviewedByName, String reason);
 
     Optional<VacationRequest> findById(UUID id);
 

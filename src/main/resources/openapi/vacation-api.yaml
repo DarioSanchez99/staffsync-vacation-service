@@ -142,6 +142,32 @@ paths:
         '404':
           description: Vacation request not found
 
+  /vacations/balance/{employeeId}:
+    get:
+      tags:
+        - vacations
+      summary: Get vacation balance for employee
+      operationId: getVacationBalance
+      parameters:
+        - name: employeeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Vacation balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationBalanceResponse'
+
   /vacations/{id}/reject:
     put:
       tags:
@@ -241,6 +267,29 @@ components:
         reviewedBy:
           type: string
           format: uuid
+        reviewedByName:
+          type: string
+          nullable: true
+        rejectionReason:
+          type: string
+          nullable: true
         createdAt:
           type: string
           format: date-time
+
+    VacationBalanceResponse:
+      type: object
+      properties:
+        employeeId:
+          type: string
+          format: uuid
+        year:
+          type: integer
+        totalDays:
+          type: integer
+        usedDays:
+          type: integer
+        pendingDays:
+          type: integer
+        availableDays:
+          type: integer

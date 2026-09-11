@@ -5,7 +5,6 @@ import com.staffsync.vacation.domain.port.out.VacationEventPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -17,34 +16,26 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class VacationEventPublisher implements VacationEventPort {
 
-    private static final String KAFKA_TOPIC = "vacation-events";
     private static final String RABBITMQ_EXCHANGE = "staffsync.notifications";
     private static final String ROUTING_KEY_REQUESTED = "vacation.requested";
     private static final String ROUTING_KEY_APPROVED = "vacation.approved";
     private static final String ROUTING_KEY_REJECTED = "vacation.rejected";
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final RabbitTemplate rabbitTemplate;
 
     @Override
     public void publishRequested(VacationRequest request) {
-        Map<String, Object> event = buildEvent("VACATION_REQUESTED", request);
-        sendToKafka(request, event);
-        sendToRabbitMQ(ROUTING_KEY_REQUESTED, event);
+        sendToRabbitMQ(ROUTING_KEY_REQUESTED, buildEvent("VACATION_REQUESTED", request));
     }
 
     @Override
     public void publishApproved(VacationRequest request) {
-        Map<String, Object> event = buildEvent("VACATION_APPROVED", request);
-        sendToKafka(request, event);
-        sendToRabbitMQ(ROUTING_KEY_APPROVED, event);
+        sendToRabbitMQ(ROUTING_KEY_APPROVED, buildEvent("VACATION_APPROVED", request));
     }
 
     @Override
     public void publishRejected(VacationRequest request) {
-        Map<String, Object> event = buildEvent("VACATION_REJECTED", request);
-        sendToKafka(request, event);
-        sendToRabbitMQ(ROUTING_KEY_REJECTED, event);
+        sendToRabbitMQ(ROUTING_KEY_REJECTED, buildEvent("VACATION_REJECTED", request));
     }
 
     private Map<String, Object> buildEvent(String type, VacationRequest request) {
@@ -55,19 +46,9 @@ public class VacationEventPublisher implements VacationEventPort {
         event.put("startDate", request.getStartDate().toString());
         event.put("endDate", request.getEndDate().toString());
         event.put("reviewedBy", request.getReviewedBy() != null ? request.getReviewedBy().toString() : null);
+        event.put("reviewedByName", request.getReviewedByName());
         event.put("timestamp", Instant.now().toString());
         return event;
-    }
-
-    private void sendToKafka(VacationRequest request, Map<String, Object> event) {
-        kafkaTemplate.send(KAFKA_TOPIC, request.getId().toString(), event)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.error("Failed to publish vacation event to Kafka: {}", ex.getMessage());
-                    } else {
-                        log.debug("Published vacation event to Kafka for request {}", request.getId());
-                    }
-                });
     }
 
     private void sendToRabbitMQ(String routingKey, Map<String, Object> event) {

@@ -12,7 +12,11 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "vacation_requests")
+@Table(name = "vacation_requests", indexes = {
+        @jakarta.persistence.Index(name = "idx_vacation_employee", columnList = "employee_id"),
+        @jakarta.persistence.Index(name = "idx_vacation_status", columnList = "status"),
+        @jakarta.persistence.Index(name = "idx_vacation_employee_status", columnList = "employee_id, status")
+})
 @Data
 @Builder
 @NoArgsConstructor
@@ -41,6 +45,12 @@ public class VacationRequestEntity {
 
     @Column(name = "reviewed_by")
     private UUID reviewedBy;
+
+    @Column(name = "reviewed_by_name", length = 255)
+    private String reviewedByName;
+
+    @Column(name = "rejection_reason", length = 1000)
+    private String rejectionReason;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

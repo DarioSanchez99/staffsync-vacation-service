@@ -1,6 +1,8 @@
 package com.staffsync.vacation.infrastructure.adapter.in.web;
 
+import com.staffsync.vacation.domain.model.VacationBalance;
 import com.staffsync.vacation.domain.model.VacationRequest;
+import com.staffsync.vacation.domain.port.in.VacationBalanceUseCase;
 import com.staffsync.vacation.domain.port.in.VacationUseCase;
 import com.staffsync.vacation.infrastructure.adapter.in.web.api.VacationsApi;
 import com.staffsync.vacation.infrastructure.adapter.in.web.dto.RejectVacationRequest;
@@ -8,14 +10,16 @@ import com.staffsync.vacation.infrastructure.adapter.in.web.dto.ReviewVacationRe
 import com.staffsync.vacation.infrastructure.adapter.in.web.dto.SubmitVacationRequest;
 import com.staffsync.vacation.infrastructure.adapter.in.web.dto.VacationResponse;
 import com.staffsync.vacation.infrastructure.adapter.in.web.dto.VacationStatus;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +31,8 @@ import java.util.stream.Collectors;
 public class VacationController implements VacationsApi {
 
     private final VacationUseCase vacationUseCase;
+    private final VacationBalanceUseCase vacationBalanceUseCase;
+    private final HttpServletRequest httpServletRequest;
 
     @Override
     public ResponseEntity<List<VacationResponse>> listVacations() {
@@ -73,14 +79,32 @@ public class VacationController implements VacationsApi {
 
     @Override
     public ResponseEntity<VacationResponse> approveVacation(UUID id, ReviewVacationRequest request) {
-        VacationRequest approved = vacationUseCase.approve(id, request.getReviewedBy());
+        String reviewedByName = httpServletRequest.getHeader("X-User-Name");
+        VacationRequest approved = vacationUseCase.approve(id, request.getReviewedBy(), reviewedByName);
         return ResponseEntity.ok(toResponse(approved));
     }
 
     @Override
     public ResponseEntity<VacationResponse> rejectVacation(UUID id, RejectVacationRequest request) {
-        VacationRequest rejected = vacationUseCase.reject(id, request.getReviewedBy(), request.getReason());
+        String reviewedByName = httpServletRequest.getHeader("X-User-Name");
+        VacationRequest rejected = vacationUseCase.reject(id, request.getReviewedBy(), reviewedByName, request.getReason());
         return ResponseEntity.ok(toResponse(rejected));
+    }
+
+    @GetMapping("/vacations/balance/{employeeId}")
+    public ResponseEntity<Map<String, Object>> getBalance(
+            @PathVariable UUID employeeId,
+            @RequestParam(defaultValue = "0") int year) {
+        int resolvedYear = year > 0 ? year : LocalDate.now().getYear();
+        VacationBalance balance = vacationBalanceUseCase.getBalance(employeeId, resolvedYear);
+        Map<String, Object> result = new HashMap<>();
+        result.put("employeeId", balance.getEmployeeId());
+        result.put("year", balance.getYear());
+        result.put("totalDays", balance.getTotalDays());
+        result.put("usedDays", balance.getUsedDays());
+        result.put("pendingDays", balance.getPendingDays());
+        result.put("availableDays", balance.availableDays());
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/vacations/paged")
@@ -126,6 +150,8 @@ public class VacationController implements VacationsApi {
                 : null);
         response.setReason(request.getReason());
         response.setReviewedBy(request.getReviewedBy());
+        response.setReviewedByName(request.getReviewedByName());
+        response.setRejectionReason(request.getRejectionReason());
         response.setCreatedAt(request.getCreatedAt() != null
                 ? request.getCreatedAt().atOffset(java.time.ZoneOffset.UTC)
                 : null);

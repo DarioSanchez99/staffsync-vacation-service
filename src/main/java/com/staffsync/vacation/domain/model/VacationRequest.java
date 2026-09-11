@@ -22,5 +22,7 @@ public class VacationRequest {
     private VacationStatus status;
     private String reason;
     private UUID reviewedBy;
+    private String reviewedByName;
+    private String rejectionReason;
     private LocalDateTime createdAt;
 }
